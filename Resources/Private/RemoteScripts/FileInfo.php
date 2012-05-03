@@ -36,51 +36,10 @@
  * local filesystem
  * however, this script is restricted to certain directories
  */
-define('T3_REMOTE_BASEDIR', '/data/dav/');
-define('T3_REMOTE_SHAREDSECRET', 'ANCESTOR-$2n(jdL)ja0?');
 
-class T3_Remote {
+include_once('RemoteBase.php');
 
-	/**
-	 * step 1: security measures
-	 * very simple right now
-	 *
-	 * @param $hash
-	 * @return void
-	 */
-	public function checkHash($hash) {
-		if (sha1(T3_REMOTE_SHAREDSECRET) !== $hash) {
-			$error = 'Invalid security hash.';
-			$this->returnAsJson($error, 'error');
-		}
-		return TRUE;
-	}
-
-
-	/**
-	 * step 2: check for the existance of all requested files
-	 *
-	 * @param array $requested Files
-	 */
-	public function checkIncomingParameters($requestedFiles) {
-		$cleanFiles = array();
-
-		if (!is_array($requestedFiles)) {
-			$error = 'No files given.';
-			$this->returnAsJson($error, 'error');
-		}
-		$requestedFiles = array_unique($requestedFiles);
-		foreach ($requestedFiles as $file) {
-				// if we find any strange values, skip this file
-			if (strpos($file, '../') !== FALSE || strpos($file, '/..') !== FALSE || strpos($file, ':') !== FALSE) {
-				continue;
-			}
-			if (file_exists(T3_REMOTE_BASEDIR . $file) || is_dir(T3_REMOTE_BASEDIR . $file)) {
-				$cleanFiles[] = $file;
-			}
-		}
-		return $cleanFiles;
-	}
+class T3_RemoteFileInfo extends T3_RemoteBase {
 
 
 	/**
@@ -109,29 +68,11 @@ class T3_Remote {
 		}
 		return $fileData;
 	 }
-
-
-	/**
-	 * sets some JSON headers, outputs the data and exits
-	 *
-	 * @param $data
-	 * @param $response: success or error 
-	 */
-	public function returnAsJson($data, $response) {
-			// set headers
-		header('Content-Type: text/javascript; charset=utf-8');
-		$responseData = array(
-			'response' => $response,
-			'data'     => $data
-		);
-		echo json_encode($responseData);
-		exit;
-	}
 }
 
-$t3RemoteObject = new T3_Remote();
-$t3RemoteObject->checkHash($_REQUEST['hash']);
+$t3RemoteObject = new T3_RemoteFileInfo();
 $cleanFiles = $t3RemoteObject->checkIncomingParameters($_REQUEST['files']);
 $fileData = $t3RemoteObject->fetchFileData($cleanFiles);
+
 // return the file info as JSON
 $t3RemoteObject->returnAsJson($fileData, 'success');
