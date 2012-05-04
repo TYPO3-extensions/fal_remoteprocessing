@@ -36,19 +36,31 @@
  * local filesystem
  * however, this script is restricted to certain directories
  */
-define('T3_REMOTE_BASEDIR', '/data/dav/');
-define('T3_REMOTE_PROCESSINGDIR', '_processed_/');
-define('T3_REMOTE_SHAREDSECRET', 'ANCESTOR-$2n(jdL)ja0?');
 
 error_reporting(E_ALL ^ E_NOTICE);
 
 class T3_RemoteBase {
+	const FILE_Settings = 'remote.ini';
+
+	/**
+	 * @var array
+	 */
+	protected $settings;
+
+	/**
+	 * @var string
+	 */
+	protected $scriptPath;
 
 	/**
 	 * initialize the remote connector
 	 * does the basic security check
 	 */
 	public function __construct() {
+		$this->scriptPath = rtrim(dirname(__FILE__), '/') . '/';
+		$this->parseSettings();
+		$this->defineConstants();
+
 		$this->checkHash($_REQUEST['hash']);
 	}
 
@@ -68,7 +80,8 @@ class T3_RemoteBase {
 	/**
 	 * step 2: check for the existance of all requested files
 	 *
-	 * @param array $requested Files
+	 * @param array $requestedFiles
+	 * @return array
 	 */
 	public function checkIncomingParameters($requestedFiles) {
 		$cleanFiles = array();
@@ -108,4 +121,74 @@ class T3_RemoteBase {
 		echo json_encode($responseData);
 		exit;
 	}
+
+	/**
+	 * Parses the settings from .ini file
+	 *
+	 * @throws RuntimeException
+	 */
+	protected function parseSettings() {
+		if (file_exists($this->scriptPath . self::FILE_Settings) === FALSE) {
+			throw new RuntimeException('Settings file not found');
+		}
+
+		$this->settings = parse_ini_file($this->scriptPath . self::FILE_Settings, TRUE);
+	}
+
+	/**
+	 * Gets a setting for a particular key.
+	 *
+	 * @param string $key
+	 * @param string $default
+	 * @return string|NULL
+	 */
+	protected function getSetting($key, $default = NULL) {
+		$setting = $this->settings;
+		$parts = explode('.', $key);
+
+		foreach ($parts as $part) {
+			if (isset($setting[$part])) {
+				$setting = $setting[$part];
+			} else {
+				$setting = NULL;
+				break;
+			}
+		}
+
+		if ($setting === NULL && $default !== NULL) {
+			$setting = $this->getSetting($default);
+		}
+
+		return $setting;
+	}
+
+	/**
+	 * Defines the constants.
+	 *
+	 * @return void
+	 */
+	protected function defineConstants() {
+		define(
+			'T3_REMOTE_BASEDIR',
+			$this->asDirectory($this->getSetting('storage.basePath'))
+		);
+		define(
+			'T3_REMOTE_PROCESSINGDIR',
+			$this->asDirectory($this->getSetting('storage.processingPath'))
+		);
+		define(
+			'T3_REMOTE_SHAREDSECRET',
+			trim($this->getSetting('security.sharedSecret'))
+		);
+	}
+
+	/**
+	 * @param string $value
+	 * @return string
+	 */
+	protected function asDirectory($value) {
+		return rtrim($value, DIRECTORY_SEPARATOR) . DIRECTORY_SEPARATOR;
+	}
 }
+
+?>

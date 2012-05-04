@@ -40,13 +40,11 @@
 include_once('RemoteBase.php');
 
 class T3_RemoteFileInfo extends T3_RemoteBase {
-
-
 	/**
 	 * step 3: fetch the file info for each file
 	 *
-	 * @param $files the cleaned files
-	 * @return $fileData
+	 * @param array $files the cleaned files
+	 * @return array
 	 */
 	 public function fetchFileData($files) {
 		$fileData = array();
@@ -76,3 +74,5 @@ $fileData = $t3RemoteObject->fetchFileData($cleanFiles);
 
 // return the file info as JSON
 $t3RemoteObject->returnAsJson($fileData, 'success');
+
+?>

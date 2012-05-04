@@ -34,8 +34,14 @@
 include_once('RemoteBase.php');
 
 class T3_RemoteProcess extends T3_RemoteBase {
-
+	/**
+	 * @var integer
+	 */
 	protected $jpgQuality = 90;
+
+	/**
+	 * @var boolean
+	 */
 	protected $sharpenImage = TRUE;
 
 	 /**
@@ -239,3 +245,5 @@ if (strlen($cleanFileName) > 0) {
 		// errors while cleaning the filename
 	$t3RemoteObject->returnAsJson('Invalid file.', 'error');
 }
+
+?>
